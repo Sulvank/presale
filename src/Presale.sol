@@ -10,6 +10,7 @@ import "./interfaces/IAggregator.sol";
 contract Presale is Ownable {
     using SafeERC20 for IERC20;
 
+    address public saleTokenAddress;
     address public usdtAddress;
     address public usdcAddress;
     address public fundsReceiverAddress;
@@ -35,6 +36,7 @@ contract Presale is Ownable {
      * @param phases_ Array containing the phases configuration.
      */
     constructor(
+        address saleTokenAddress_,
         address usdtAddress_,
         address usdcAddress_,
         address fundsReceiverAddress_,
@@ -44,6 +46,7 @@ contract Presale is Ownable {
         uint256 endingTime_,
         uint256[][3] memory phases_
     ) Ownable(msg.sender) {
+        saleTokenAddress = saleTokenAddress_;
         usdtAddress = usdtAddress_;
         usdcAddress = usdcAddress_;
         fundsReceiverAddress = fundsReceiverAddress_;
@@ -54,6 +57,7 @@ contract Presale is Ownable {
         phases = phases_;
 
         require(endingTime_ > startingTime_, "Incorrect presale times");
+        IERC20(saleTokenAddress_).safeTransferFrom(msg.sender, address(this), maxSellingAmount_);
     }
 
     /**
@@ -126,11 +130,20 @@ contract Presale is Ownable {
         emit TokenBuy(msg.sender, tokenAmountToReceive);
     }
 
+    function claim() external {
+        require(block.timestamp > endingTime, "Presale not ended");
+        uint256 amount = userTokenBalance[msg.sender];
+        delete userTokenBalance[msg.sender];
+
+        IERC20(saleTokenAddress).safeTransfer(msg.sender, amount);
+    }
+
     function getEtherPrice() public view returns(uint256) {
         (,int256 price,,,) = IAggregator(dataFeedAddress).latestRoundData();
         price = price * ( 10**10);
         return uint256(price);
     }
+
 
     function emergencyERC20Withdraw(address tokenAddress_, uint256 amount_) onlyOwner() external {
         IERC20(tokenAddress_).safeTransfer(msg.sender, amount_);
