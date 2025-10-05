@@ -78,11 +78,9 @@ contract Presale is Ownable {
         blackList[user_] = false;
     }
 
-    function checkCurrentPhase(uint256 amount_) private returns(uint256 phase) {
-        if((totalSold + amount_ >= phases[currentPhase][0] || (block.timestamp >= phases[currentPhase][2])) && currentPhase < 3) {
+    function checkCurrentPhase(uint256 amount_) private {
+        if((totalSold + amount_ >= phases[currentPhase][0] || (block.timestamp >= phases[currentPhase][2])) && currentPhase < 2) { 
             currentPhase++;
-        } else {
-            phase = currentPhase;
         }
     }
 
@@ -98,8 +96,12 @@ contract Presale is Ownable {
         require(tokenUsedToBuy_ == usdtAddress || tokenUsedToBuy_ == usdcAddress, "Invalid stable coin");
 
         uint256 tokenAmountToReceive;
-        if(ERC20(tokenUsedToBuy_).decimals() == 18) tokenAmountToReceive = amount_ * 1e6 / phases[currentPhase][1];
-        else tokenAmountToReceive = amount_  * 10**(18 - ERC20(tokenUsedToBuy_).decimals()) * 1e6 / phases[currentPhase][1];
+        if (ERC20(tokenUsedToBuy_).decimals() == 18) {
+            tokenAmountToReceive = amount_ * 1e6 / phases[currentPhase][1];
+        } else {
+            tokenAmountToReceive = amount_ * 10**(18 - ERC20(tokenUsedToBuy_).decimals()) * 1e6 / phases[currentPhase][1];
+        }
+
         checkCurrentPhase(tokenAmountToReceive);
         
         totalSold += tokenAmountToReceive;
